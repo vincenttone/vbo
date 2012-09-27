@@ -81,9 +81,19 @@ module Vince
       get_url('authorize', data, URL_TYPE_OAUTH)
     end
     
-    #设置access_token
+    #设置access code
     def set_access_code(code)
       @access_code = code
+    end
+
+    #设置access token信息
+    def set_access_token(token_hash)
+      if token_hash['access_token'].nil? or token_hash['uid'].nil? or token_hash['expires_in'].nil?
+        raise 'Access token error!'
+      end
+      @access_token = token_hash['access_token']
+      @uid = token_hash['uid']
+      @expires_in = token_hash['expires_in']
     end
     
     #获取access token
@@ -102,9 +112,6 @@ module Vince
       if result['access_token'].nil?
         raise 'Get access_token faild'
       else
-        @access_token = result['access_token']
-        @uid = result['uid']
-        @expires_in = result['expires_in']
         result
       end
     end
