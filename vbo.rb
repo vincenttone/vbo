@@ -37,7 +37,9 @@ module Vince
 
     #获取URL参数
     def get_url_params(hash_params)
-      params = URI.escape hash_params.collect{|k, v| "#{k}=#{URI.encode(v)}"}.join('&')
+      params = URI.escape hash_params.collect { |k, v| 
+        v=v.to_s
+        "#{k}=#{URI.encode(v)}"}.join('&')
     end
 
     #获取get格式的URL
@@ -47,31 +49,57 @@ module Vince
     end
 
     # GET方法封装
-    def get(path, initheader={}, dest=nil)
+    def get(path)
       #请求并返回
-      #Net::HTTP.get(path, initheader, dest)
       uri = URI(path)
       request = Net::HTTP::Get.new uri.request_uri
       res = Net::HTTP.start( uri.host, uri.port, :use_ssl=> uri.scheme == 'https') do |http|
         response = http.request request
       end
-      res.body
     end
     # POST方法封装
     def post(path, data)
-      #Net::HTTP.post_form URI(path), data
       uri = URI(path)
       request = Net::HTTP::Post.new uri.request_uri
       request.set_form_data data
       res = Net::HTTP.start( uri.host, uri.port, :use_ssl=> uri.scheme == 'https') do |http|
         response = http.request request
       end
-      res.body
     end
+
+    #GET请求api数据
+    def get_api_data(path, data)
+      data['access_token'] = @access_token
+      url = get_url path + '.json', data
+      res = get url
+    end
+
+    #POST请求api数据
+    def post_api_data(path, data)
+      data['access_token'] = @access_token
+      url = get_request_url path + '.json'
+      res = post url, data
+    end
+
+    def method_missing(method, *args)
+      method_name = method.to_s.downcase
+      if method_name.index('get__') == 0
+        m = method_name[5, method_name.size]
+        m.sub! '__', '/'
+        get_api_data m, args[0]
+      elsif method_name.index('post__') == 0
+        m = method_name[5, method_name.size]
+        m.sub! '__', '/'
+        get_api_data m, args[0]
+      else
+        super
+      end
+    end
+
 
     public
     # ============= public ===============
-    
+
     #获取access_token地址
     def get_authorize_url
       data = {
@@ -80,7 +108,7 @@ module Vince
       }
       get_url('authorize', data, URL_TYPE_OAUTH)
     end
-    
+
     #设置access code
     def set_access_code(code)
       @access_code = code
@@ -95,7 +123,7 @@ module Vince
       @uid = token_hash['uid']
       @expires_in = token_hash['expires_in']
     end
-    
+
     #获取access token
     def get_access_token
       data = {
@@ -106,8 +134,9 @@ module Vince
         'redirect_uri' => @callback_uri
       }
       url = get_request_url('access_token', URL_TYPE_OAUTH)
-      res_body = post url, data
-      
+      res = post url, data
+      res_body = res.body
+
       result = JSON.load res_body
       if result['access_token'].nil?
         raise 'Get access_token faild'
@@ -116,6 +145,7 @@ module Vince
       end
     end
 
+    
   end
   #end class
 end
