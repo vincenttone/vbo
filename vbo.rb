@@ -81,16 +81,21 @@ module Vince
       res = post url, data
     end
 
+    #哟！幽灵方法
     def method_missing(method, *args)
       method_name = method.to_s.downcase
       if method_name.index('get__') == 0
         m = method_name[5, method_name.size]
         m.sub! '__', '/'
-        get_api_data m, args[0]
+        res = get_api_data m, args[0]
+        super if res.code.to_i == 404
+        res
       elsif method_name.index('post__') == 0
         m = method_name[5, method_name.size]
         m.sub! '__', '/'
-        get_api_data m, args[0]
+        res = get_api_data m, args[0]
+        super if res.code.to_i == 404
+        res
       else
         super
       end
