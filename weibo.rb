@@ -100,9 +100,9 @@ module Vbo
         m = method_name[5, method_name.size]
         m.sub! '__', '/'
         if args[0].nil?
-          res = get_api_data m
+          res = post_api_data m
         else 
-          res = get_api_data m, args[0]
+          res = post_api_data m, args[0]
         end
         super if res.code.to_i == 404
         res
