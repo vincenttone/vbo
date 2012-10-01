@@ -4,8 +4,8 @@ require 'net/http'
 require 'uri'
 require 'json'
 
-module Vince
-  class Vbo
+module Vbo
+  class Weibo
     URL_TYPE_API = 1;
     URL_TYPE_OAUTH = 2;
 
@@ -81,7 +81,7 @@ module Vince
       res = post url, data
     end
 
-    #哟！幽灵方法
+    #动态调用微博请求
     def method_missing(method, *args)
       method_name = method.to_s.downcase
       if method_name.index('get__') == 0
