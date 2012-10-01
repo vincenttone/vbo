@@ -85,15 +85,25 @@ module Vbo
     def method_missing(method, *args)
       method_name = method.to_s.downcase
       if method_name.index('get__') == 0
+        #GET方法
         m = method_name[5, method_name.size]
         m.sub! '__', '/'
-        res = get_api_data m, args[0]
+        if args[0].nil?
+          res = get_api_data m
+        else 
+          res = get_api_data m, args[0]
+        end
         super if res.code.to_i == 404
         res
       elsif method_name.index('post__') == 0
+        #POST方法
         m = method_name[5, method_name.size]
         m.sub! '__', '/'
-        res = get_api_data m, args[0]
+        if args[0].nil?
+          res = get_api_data m
+        else 
+          res = get_api_data m, args[0]
+        end
         super if res.code.to_i == 404
         res
       else
