@@ -93,8 +93,13 @@ module Vbo
         else 
           res = get_api_data m, args[0]
         end
-        super if res.code.to_i == 404
-        res
+
+        case res.code.to_i
+        when 404 then super
+        when 200 then JSON::load res.body
+        else raise res.code + ' error: ' + res.body
+        end
+
       elsif method_name.index('post__') == 0
         #POST方法
         m = method_name[5, method_name.size]
@@ -104,8 +109,12 @@ module Vbo
         else 
           res = post_api_data m, args[0]
         end
-        super if res.code.to_i == 404
-        res
+        case res.code.to_i
+        when 404 then super
+        when 200 then JSON::load res.body
+        else raise res.code + ' error: ' + res.body
+        end
+
       else
         super
       end
