@@ -171,6 +171,12 @@ module Vbo
       end
     end
 
+    def set_app_config(app_key, secret_key, callback_uri)
+      @app_key = app_key
+      @secret_key = secret_key
+      @callback_uri = callback_uri
+      nil
+    end
     
   end
   #end class
