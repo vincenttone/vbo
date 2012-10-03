@@ -163,7 +163,7 @@ module Vbo
       res = post url, data
       res_body = res.body
 
-      result = JSON.load res_body
+      result = JSON::load res_body
       if result['access_token'].nil?
         raise 'Get access_token faild'
       else
