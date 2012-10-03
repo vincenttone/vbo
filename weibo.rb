@@ -170,7 +170,7 @@ module Vbo
         result
       end
     end
-
+    #设置APP KEY等参数的方法
     def set_app_config(app_key, secret_key, callback_uri)
       @app_key = app_key.to_s
       @secret_key = secret_key.to_s
