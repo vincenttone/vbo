@@ -136,6 +136,7 @@ module Vbo
     #设置access code
     def set_access_code(code)
       @access_code = code
+      nil
     end
 
     #设置access token信息
@@ -146,6 +147,7 @@ module Vbo
       @access_token = token_hash['access_token']
       @uid = token_hash['uid']
       @expires_in = token_hash['expires_in']
+      nil
     end
 
     #获取access token
