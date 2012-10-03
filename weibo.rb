@@ -14,7 +14,7 @@ module Vbo
 
     APP_KEY = ''
     APP_SECRET = ''
-    CALLBACK_URI = 'http://127.0.0.1:3000/weibo/code'
+    CALLBACK_URI = ''
 
     def initialize
       @app_key = ENV['WB_APP_KEY'] || APP_KEY
@@ -172,9 +172,9 @@ module Vbo
     end
 
     def set_app_config(app_key, secret_key, callback_uri)
-      @app_key = app_key
-      @secret_key = secret_key
-      @callback_uri = callback_uri
+      @app_key = app_key.to_s
+      @secret_key = secret_key.to_s
+      @callback_uri = callback_uri.to_s
       nil
     end
     
