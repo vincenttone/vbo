@@ -34,10 +34,15 @@ module Vbo
     end
 
     #获取URL参数
-    def get_url_params(hash_params)
+    def get_url_params(hash_params, encode_data=false)
       params = URI.escape hash_params.collect { |k, v| 
         v=v.to_s
-        "#{k}=#{URI.encode(v)}"}.join('&')
+        if encode_data
+          "#{k}=#{URI.encode(v)}"
+        else
+          "#{k}=#{v}"
+        end
+      }.join('&')
     end
 
     #获取get格式的URL
