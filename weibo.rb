@@ -20,8 +20,6 @@ module Vbo
       @app_key = ENV['WB_APP_KEY'] || APP_KEY
       @secret_key = ENV['WB_SECRET_KEY'] || APP_SECRET
       @callback_uri = ENV['WB_CALLBACK'] || CALLBACK_URI
-
-      @access_code = '35379ca19600ad469306cdd3e2359c49'
     end
 
     private
@@ -68,14 +66,14 @@ module Vbo
     end
 
     #GET请求api数据
-    def get_api_data(path, data)
+    def get_api_data(path, data={})
       data['access_token'] = @access_token
       url = get_url path + '.json', data
       res = get url
     end
 
     #POST请求api数据
-    def post_api_data(path, data)
+    def post_api_data(path, data={})
       data['access_token'] = @access_token
       url = get_request_url path + '.json'
       res = post url, data
@@ -135,7 +133,7 @@ module Vbo
 
     #设置access code
     def set_access_code(code)
-      @access_code = code
+      @access_code = code.to_s
       nil
     end
 
