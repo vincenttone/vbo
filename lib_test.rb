@@ -9,7 +9,7 @@ class VboTest
   def initialize
     @save_file = '/tmp/vbo-test.yml'
     @vbo = Vbo::Weibo.new
-    @vbo.set_app_config :app_key, :app_screct, :call_backurl
+    @vbo.set_app_config '713186945', 'ddd6c8de31f401bbc72f692fa12d4dd1', 'http://tools.lunae.cc/vbo/callback.php'
     if File.exists?(@save_file)
       access_token = YAML.load_file(@save_file)
       time_now = Time.now.to_i
