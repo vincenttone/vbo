@@ -3,30 +3,32 @@
 require 'yaml'
 require 'time'
 require 'uri'
-require File.dirname(__FILE__)+'/lib/weibo'
+require File.dirname(__FILE__)+'/../lib/weibo'
 
 class VboTest
-  def initialize
-    @save_file = '/tmp/vbo-test.yml'
+  def initialize(save_file='/tmp/vbo-test.yml')
+    @save_file = save_file
     @vbo = Vbo::Weibo.new
-    @vbo.set_app_config '713186945', 'ddd6c8de31f401bbc72f692fa12d4dd1', 'http://tools.lunae.cc/vbo/callback.php'
+    @vbo.set_app_config :app_key, :app_screct, :callback_url
+  end
+
+  def set_access_token
     if File.exists?(@save_file)
       access_token = YAML.load_file(@save_file)
       time_now = Time.now.to_i
+      #如果过期了返回false
       if access_token['expires_when'].to_i < time_now
-        access_token = get_token
+        false
       end
+      @uid = access_token['uid']
+      @vbo.set_access_token access_token
+      true
     else
-      access_token = get_token
+      false
     end
-    @uid = access_token['uid']
-    @vbo.set_access_token access_token
   end
 
-  def get_token
-    puts 'Goto this page, get the access code: ' + @vbo.get_authorize_url
-    puts 'Please input the code you get:'
-    access_code = gets.chomp
+  def get_access_token(access_code)
     @vbo.set_access_code access_code.to_s
     access_token = @vbo.get_access_token
     time_now = Time.now.to_i
@@ -35,6 +37,10 @@ class VboTest
       f.write access_token.to_yaml
     end
     access_token
+  end
+
+  def get_auth_url
+    @vbo.get_authorize_url
   end
 
   def get_uid

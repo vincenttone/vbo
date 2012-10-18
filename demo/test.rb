@@ -1,5 +1,6 @@
+#!/usr/bin/env ruby
 # -*- coding: utf-8 -*-
-require File.dirname(__FILE__) + '/lib_test.rb'
+require File.dirname(__FILE__) + '/lib.rb'
 
 #微博数据处理方法
 def output_line(timeline)
@@ -25,7 +26,17 @@ def output_line(timeline)
   output
 end
 
-v = VboTest.new
+v = VboTest.new '/tmp/vbo-test.yml'
+if not v.set_access_token
+  puts 'Goto this page, get the access code: ' + v.get_auth_url
+  puts 'Please input the code you get:'
+  access_code = gets.chomp
+  v.get_access_token access_code
+  if not v.set_access_token
+    throw "Can't set access token.."
+  end
+end
+
 if ARGV.length > 0
   timeline = case ARGV[0]
              when 'user'

@@ -1,46 +1,105 @@
+#!/usr/bin/env ruby
 # -*- coding: utf-8 -*-
-#/usr/bin/env ruby
 
 require 'gtk2'
 require 'uri'
 require 'cgi'
-require File.dirname(__FILE__) + '/lib_test.rb'
+require File.dirname(__FILE__) + '/lib.rb'
 
-class GTest
+class GVbo
   def initialize
-    @v = VboTest.new
+    @v = VboTest.new './token.yml'
     @page = 1
 
     Gtk.init
     @window = Gtk::Window.new Gtk::Window::TOPLEVEL
-    @window.set_title "小微博"
+    @window.set_title "某个弱爆了的客户端"
     @window.set_size_request 500, 500
-
-    draw_frame
-    load_home_timeline
-    #load_user_timeline :vincenttone
 
     @window.signal_connect 'delete_event' do
       Gtk::main_quit
     end
+    
+    if check_auth
+      show_main_frame
+    end
+
+    @window.show_all
+
+  end
+
+  def check_auth
+    check_result = false
+    if not @v.set_access_token
+      auth_fix = Gtk::Fixed.new
+
+      auth_box = Gtk::VBox.new true, 0
+      auth_label_alert = Gtk::Label.new
+      auth_label_alert.width_chars = 40
+      auth_label_alert.markup = '<span weight="bold" font_desc="13">请访问以下地址获取您的授权码</span>'
+
+      auth_url = Gtk::LinkButton.new  @v.get_auth_url, "点击我获取授权码"
+
+      auth_label_tips = Gtk::Label.new 
+      auth_label_tips.markup = '<span font_desc="13">填入下面的输入框中</span>'
+      auth_input = Gtk::Entry.new
+      auth_button = Gtk::Button.new "验证"
+
+      auth_box.pack_start auth_label_alert, false
+      auth_box.pack_start auth_url, false
+      auth_box.pack_start auth_label_tips, false
+
+      auth_box.pack_start auth_input, false
+      auth_box.pack_start auth_button, false
+
+      auth_fix.put auth_box, 100, 100
+      @window.add auth_fix
+      auth_button.signal_connect 'clicked' do
+        token = auth_input.text
+        if token == ''
+          auth_input.text = '请输入授权码'
+        else
+          @v.get_access_token token
+          if @v.set_access_token
+            @window.remove auth_fix
+            check_result = true
+            show_main_frame
+          end
+        end
+      end
+    else
+      check_result = true
+    end
+    check_result
+  end
+
+  def show_main_frame
+    draw_frame
+    load_home_timeline
+    #load_user_timeline :vincenttone
 
     @weibo_send_button.signal_connect 'clicked' do
       @weibo_send_button.label = '发送中...'
       input_text = @weibo_input_field.buffer.text
       if @v.statuses_update input_text
         @weibo_send_button.label = '发布'
-        @page = 1
-
-        @show_box.remove @vbox
-
-        @vbox = Gtk::VBox.new false, 2
-        @show_box.pack_start @vbox, false
-
-        load_home_timeline
+        refresh_homeline
         @weibo_input_field.buffer.text = ''
       end
     end
+  end
 
+  def refresh_homeline
+    @page = 1
+
+    @show_box.remove @vbox
+
+    @vbox = Gtk::VBox.new false, 2
+    @show_box.pack_start @vbox, false
+    @vbox.show
+        
+    @scrolled_window.vadjustment.value = @scrolled_window.vadjustment.lower
+    load_home_timeline
   end
 
   def draw_frame
@@ -50,7 +109,7 @@ class GTest
     #发微博区
     @send_frame = Gtk::Frame.new "发个微博吧～"
     @main_box.pack_start @send_frame, false
-    
+
     @send_box = Gtk::HBox.new false, 0
     @send_frame.add @send_box
 
@@ -89,17 +148,19 @@ class GTest
 
     @vbox = Gtk::VBox.new false, 2
     @show_box.pack_start @vbox, false
+
+    @main_box.show_all
   end
 
   def load_home_timeline
     timeline = @v.home_timeline 30, @page
     display timeline
     #加载按钮
-    load_new_button = Gtk::Button.new '继续浏览'
-    @vbox.pack_start load_new_button, false
-    load_new_button.show
-    load_new_button.signal_connect 'clicked' do |w, e|
-      @vbox.remove load_new_button
+    @load_new_button = Gtk::Button.new '继续浏览'
+    @vbox.pack_start @load_new_button, false
+    @load_new_button.show
+    @load_new_button.signal_connect 'clicked' do |w, e|
+      @vbox.remove @load_new_button
       @page += 1
       load_home_timeline
     end
@@ -113,11 +174,11 @@ class GTest
     end
     display timeline
     #加载按钮
-    load_new_button = Gtk::Button.new '继续浏览'
-    @vbox.pack_start load_new_button, false
-    load_new_button.show
+    @load_new_button = Gtk::Button.new '继续浏览'
+    @vbox.pack_start @load_new_button, false
+    @load_new_button.show
     load_new_button.signal_connect 'clicked' do |w, e|
-      @vbox.remove load_new_button
+      @vbox.remove @load_new_button
       @page += 1
       load_home_timeline user
     end
@@ -133,7 +194,7 @@ class GTest
       label.wrap=true
       label.selectable = true
       label.width_chars = 70
-      @vbox.pack_start label, false
+      
       line = ''
       line += '<span weight="bold" foreground="white" background="#1982d1" font_desc="13">'+ t['name'] + '</span>'
       line += ': '
@@ -147,9 +208,11 @@ class GTest
       end
       line += '<span foreground="#555555" background="#bbbbbb" font_desc="10">' + t['time'] + '</span>'
       label.markup = line
+
+      @vbox.pack_start label, false
       #横线
       sep = Gtk::HSeparator.new
-      @show_box.pack_start sep, false
+      @vbox.pack_start sep, false
       label.show
       sep.show
     end
@@ -179,10 +242,9 @@ class GTest
   end
 
   def run
-    @window.show_all
     Gtk.main
   end
 end
 
-g = GTest.new
+g = GVbo.new
 g.run

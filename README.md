@@ -12,10 +12,10 @@
 - 通过`vbo.set_access_token access_token`来设置access token
 - 调用api，调用时使用两个下划线代替url中的斜杠，前缀加入调用方法：比如调用`statuses/get_user_timeline`(get 方法)时使用`get__statuses__get_user_timeline`
 
-## 关于lib_test.rb
-> lib_test.rb是使用vbo写的一个简单命令查看微博的测试文件。
-> 调试时请自行修改lib_test.rb第9行和第11行为自己的配置。
+## 关于DEMO
+> test.rb是使用vbo写的一个简单命令查看微博的测试文件。
+> 调试时请自行修改libt.rb第9行和第11行为自己的配置。
 > 没有包装成gem，因为只有一个文件。如果希望包装成gem包，劳烦请自行包装。
 > 实际应用中可以根据喜好进行续权和token保存操作。
 > test.rb为命令行调用
-> gtest.rb为gtk调用，头次写，见谅……还没完成
+> gvbo.rb为gtk调用，头次写，见谅……还没完成
