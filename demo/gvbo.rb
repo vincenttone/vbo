@@ -83,23 +83,29 @@ class GVbo
       input_text = @weibo_input_field.buffer.text
       if @v.statuses_update input_text
         @weibo_send_button.label = '发布'
-        refresh_homeline
+        refresh_line
         @weibo_input_field.buffer.text = ''
       end
     end
   end
 
-  def refresh_homeline
+  def refresh_line(type="home", user=nil)
     @page = 1
+    @refresh_button.label = '加载中...'
 
-    @show_box.remove @vbox
-
+    @vcbox.remove @vbox
     @vbox = Gtk::VBox.new false, 2
-    @show_box.pack_start @vbox, false
+    @vcbox.pack_start @vbox, false
     @vbox.show
         
     @scrolled_window.vadjustment.value = @scrolled_window.vadjustment.lower
-    load_home_timeline
+    case type.to_s
+    when "home"
+      load_home_timeline
+    when "user"
+      losd_user_timeline user
+    end
+    @refresh_button.label = '刷新'
   end
 
   def draw_frame
@@ -139,15 +145,29 @@ class GVbo
 
     @show_box = Gtk::VBox.new false, 2
 
+    #小工具区
+    @tools_box = Gtk::HBox.new false,10
+    @refresh_button = Gtk::Button.new '刷新'
+    @tools_box.pack_start @refresh_button
+
     @scrolled_window = Gtk::ScrolledWindow.new nil, nil
-    @scrolled_window.set_policy Gtk::POLICY_AUTOMATIC, Gtk::POLICY_ALWAYS
-    @scrolled_window.add_with_viewport @show_box
+    @scrolled_window.set_policy Gtk::POLICY_NEVER, Gtk::POLICY_AUTOMATIC
 
-    @show_weibo_frame.add @scrolled_window
-    @show_weibo_frame.set_size_request 500, 400
+    @view_frame = Gtk::Frame.new
+    @view_frame.add @scrolled_window
+    @view_box = Gtk::VBox.new false, 2
+    @view_box.pack_start @view_frame, false
 
+    @vcbox = Gtk::VBox.new false, 2
     @vbox = Gtk::VBox.new false, 2
-    @show_box.pack_start @vbox, false
+    @scrolled_window.add_with_viewport @vcbox
+    @vcbox.pack_start @vbox, false
+
+    @show_box.pack_start @tools_box, false
+    @show_box.pack_start @view_box, false
+
+    @show_weibo_frame.add @show_box
+    @view_frame.set_size_request 500, 350
 
     @main_box.show_all
   end
@@ -163,6 +183,9 @@ class GVbo
       @vbox.remove @load_new_button
       @page += 1
       load_home_timeline
+    end
+    @refresh_button.signal_connect 'clicked' do
+      refresh_line
     end
   end
 
@@ -180,8 +203,13 @@ class GVbo
     load_new_button.signal_connect 'clicked' do |w, e|
       @vbox.remove @load_new_button
       @page += 1
-      load_home_timeline user
+      load_user_timeline user
     end
+
+    @refresh_button.signal_connect 'clicked' do
+      refresh_line :user
+    end
+
   end
 
   def display(timeline)
@@ -195,8 +223,15 @@ class GVbo
       label.selectable = true
       label.width_chars = 70
       
+      weibo_detail_url = 'http://api.t.sina.com.cn/' + t['uid'] + '/statuses/' + t['id']
+      
       line = ''
-      line += '<span weight="bold" foreground="white" background="#1982d1" font_desc="13">'+ t['name'] + '</span>'
+      line += '<span weight="bold" foreground="white" background="#1982d1" font_desc="13">'
+      line += t['name'] 
+      if t['remark'] != '' &&  (not t['remark'].nil?)
+        line += '('+t['remark']+')'
+      end
+      line += '</span>'
       line += ': '
       line += '<span foreground="#333333" font_desc="12">'+ CGI::escapeHTML(t['text']) + '</span>'
       if not t['r'].nil?
@@ -206,10 +241,32 @@ class GVbo
         end
         line += '<span foreground="#333333" font_desc="12">' + CGI::escapeHTML(t['r']['text']) + '</span>'
       end
-      line += '<span foreground="#555555" background="#bbbbbb" font_desc="10">' + t['time'] + '</span>'
+
+      more_table = Gtk::Table.new 1, 6
+      des_box = Gtk::HBox.new
+      
+      more_label = Gtk::LinkButton.new weibo_detail_url, '进入详情'
+
+      time_label = Gtk::Label.new
+      time_label.markup = '<span foreground="#333333">'+t['time']+'</span>'
+      time_label.show
+
+      comment_button = Gtk::Button.new '评论'
+      retweet_button = Gtk::Button.new '转发'
+      reit_button = Gtk::Button.new '直接转发'
+    
+      more_table.attach time_label, 0, 2, 0, 1
+      more_table.attach comment_button, 2, 3, 0, 1
+      more_table.attach retweet_button, 3, 4, 0, 1
+      more_table.attach reit_button, 4, 5, 0, 1
+      more_table.attach more_label, 5, 6, 0, 1
+
+      more_table.show_all
+
       label.markup = line
 
       @vbox.pack_start label, false
+      @vbox.pack_start more_table, false
       #横线
       sep = Gtk::HSeparator.new
       @vbox.pack_start sep, false
@@ -224,9 +281,18 @@ class GVbo
     raise 'get weibo data faild..' if timeline['statuses'].nil?
     timeline['statuses'].each do |t|
       data = {}
+      data['id'] = t['id'].to_s
+      data['uid'] = t['user']['id'].to_s
+      data['avatar'] = t['user']['profile_image_url']
       data['name'] = t['user']['screen_name'] 
       data['gender'] = t['user']['gender']
+      data['remark'] = t['user']['remark']
       data['text'] = t['text']
+      data['udes'] = t['user']['description']
+      
+      if not t['thumbnail_pic'].nil?
+        data['thumbnail_pic'] = t['thumbnail_pic']
+      end
       if not t['retweeted_status'].nil?
         data['r'] = {}
         if not t['retweeted_status']['user'].nil? 
