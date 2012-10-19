@@ -9,7 +9,7 @@ class VboTest
   def initialize(save_file='/tmp/vbo-test.yml')
     @save_file = save_file
     @vbo = Vbo::Weibo.new
-    @vbo.set_app_config :app_key, :app_screct, :callback_url
+    @vbo.set_app_config :app_key, :app_scret, :callback_url
   end
 
   def set_access_token
@@ -47,6 +47,8 @@ class VboTest
     @uid
   end
 
+  alias :uid :get_uid
+
   def get_public_timeline
     @vbo.get__statuses__public_timeline
   end
@@ -73,6 +75,22 @@ class VboTest
       data.push({'annotations'=>anno})
     end
     @vbo.post__statuses__update data
+  end
+
+  def statuses_repost(id, status=nil)
+    data = {'id'=>id}
+    data['status'] = status unless status.nil?
+    @vbo.post__statuses__repost data
+  end
+
+  def statuses_destroy(id)
+    data = {'id'=>id}
+    @vbo.post__statuses__destroy data
+  end
+
+  def comments_create(id, comment)
+    data = {'id'=>id, 'comment'=>comment}
+    @vbo.post__comments__create data
   end
 
 end

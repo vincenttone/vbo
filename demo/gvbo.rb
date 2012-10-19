@@ -10,11 +10,13 @@ class GVbo
   def initialize
     @v = VboTest.new './token.yml'
     @page = 1
+    @view_now = 'home'
 
     Gtk.init
     @window = Gtk::Window.new Gtk::Window::TOPLEVEL
     @window.set_title "某个弱爆了的客户端"
-    @window.set_size_request 500, 500
+    @window.set_size_request 500, 620
+    @window.resizable=false
 
     @window.signal_connect 'delete_event' do
       Gtk::main_quit
@@ -25,7 +27,6 @@ class GVbo
     end
 
     @window.show_all
-
   end
 
   def check_auth
@@ -78,13 +79,39 @@ class GVbo
     load_home_timeline
     #load_user_timeline :vincenttone
 
-    @weibo_send_button.signal_connect 'clicked' do
-      @weibo_send_button.label = '发送中...'
-      input_text = @weibo_input_field.buffer.text
-      if @v.statuses_update input_text
-        @weibo_send_button.label = '发布'
-        refresh_line
-        @weibo_input_field.buffer.text = ''
+    @weibo_send_button.signal_connect 'clicked' do |w|
+      if @weibo_send_status == 'retweet' && ( not @weibo_send_id.nil?)
+        @weibo_send_button_label.markup = '<b>发送中...</b>'
+        input_text = @weibo_input_field.buffer.text
+        if @v.statuses_repost @weibo_send_id, input_text
+          @weibo_send_button_label.markup = '<b>发布</b>'
+          @weibo_send_button.modify_bg Gtk::STATE_NORMAL, Gdk::Color.parse('DeepSkyBlue1')
+          refresh_line
+          @weibo_input_field.buffer.text = ''
+          @weibo_send_status = nil
+          @weibo_send_id = nil
+        end
+      elsif @weibo_send_status == 'comment' && ( not @weibo_send_id.nil?)
+        @weibo_send_button_label.markup = '<b>发送中...</b>'
+        input_text = @weibo_input_field.buffer.text
+        if @v.comments_create @weibo_send_id, input_text
+          @weibo_send_button_label.markup = '<b>发布</b>'
+          @weibo_send_button.modify_bg Gtk::STATE_NORMAL, Gdk::Color.parse('DeepSkyBlue1')
+          refresh_line
+          @weibo_input_field.buffer.text = ''
+          @weibo_send_status = nil
+          @weibo_send_id = nil
+        end
+      else
+        @weibo_send_button_label.markup = '<b>发送中...</b>'
+        input_text = @weibo_input_field.buffer.text
+        if @v.statuses_update input_text
+          @weibo_send_button_label.markup = '<b>发布</b>'
+          refresh_line
+          @weibo_input_field.buffer.text = ''
+          @weibo_send_status = nil
+          @weibo_send_id = nil
+        end
       end
     end
   end
@@ -103,34 +130,39 @@ class GVbo
     when "home"
       load_home_timeline
     when "user"
-      losd_user_timeline user
+      load_user_timeline user
     end
     @refresh_button.label = '刷新'
   end
 
   def draw_frame
-    @main_box = Gtk::VBox.new false, 0
+    @main_box = Gtk::VBox.new false, 5
     @window.add @main_box
 
     #发微博区
     @send_frame = Gtk::Frame.new "发个微博吧～"
     @main_box.pack_start @send_frame, false
 
-    @send_box = Gtk::HBox.new false, 0
+    @send_box = Gtk::HBox.new false, 10
     @send_frame.add @send_box
 
     #发微博区的设施
     @weibo_input_field = Gtk::TextView.new
-    @weibo_input_field.set_size_request 350, 50
+    @weibo_input_field.set_size_request 350, 80
+    @weibo_input_field.wrap_mode = Gtk::TextTag::WRAP_WORD
     @weibo_input_fixed = Gtk::Fixed.new
     @weibo_input_fixed.put @weibo_input_field, 10, 0
     @weibo_input_box = Gtk::VBox.new
     @weibo_input_box.pack_start @weibo_input_fixed, false
 
-    @weibo_send_button = Gtk::Button.new "发布"
-    @weibo_send_button.set_size_request 80, 50
+    @weibo_send_button = Gtk::Button.new 
+    @weibo_send_button_label = Gtk::Label.new
+    @weibo_send_button_label.markup = "<b>发布</b>"
+    @weibo_send_button.add_child Gtk::Builder.new, @weibo_send_button_label
+    @weibo_send_button.modify_bg Gtk::STATE_NORMAL, Gdk::Color.parse('DeepSkyBlue1')
+    @weibo_send_button.set_size_request 100, 60
     @weibo_send_fixed = Gtk::Fixed.new
-    @weibo_send_fixed.put @weibo_send_button, 30, 0
+    @weibo_send_fixed.put @weibo_send_button, 0, 10
     @weibo_send_box = Gtk::VBox.new
     @weibo_send_box.pack_start @weibo_send_fixed, false
     @weibo_send_box.set_size_request 50, 50
@@ -143,12 +175,22 @@ class GVbo
     @show_weibo_frame = Gtk::Frame.new '最新微博'
     @main_box.pack_start @show_weibo_frame, false
 
-    @show_box = Gtk::VBox.new false, 2
+    @show_box = Gtk::VBox.new false, 5
 
     #小工具区
     @tools_box = Gtk::HBox.new false,10
+    @tools_table = Gtk::Table.new 1, 7
+    @search_input = Gtk::Entry.new
+    #@search_input.text = '请输入用户昵称或uid'
+    @search_submit = Gtk::Button.new '查看'
     @refresh_button = Gtk::Button.new '刷新'
-    @tools_box.pack_start @refresh_button
+    @home_button = Gtk::Button.new '主页'
+    @tools_box.pack_start @tools_table
+    
+    @tools_table.attach @search_input, 1, 3, 0, 1
+    @tools_table.attach @search_submit, 4, 5, 0, 1
+    @tools_table.attach @refresh_button, 5, 6, 0, 1
+    @tools_table.attach @home_button, 6, 7, 0, 1
 
     @scrolled_window = Gtk::ScrolledWindow.new nil, nil
     @scrolled_window.set_policy Gtk::POLICY_NEVER, Gtk::POLICY_AUTOMATIC
@@ -167,12 +209,27 @@ class GVbo
     @show_box.pack_start @view_box, false
 
     @show_weibo_frame.add @show_box
-    @view_frame.set_size_request 500, 350
+    @view_frame.set_size_request 500, 430
+
+    @search_submit.signal_connect 'clicked' do
+      text = @search_input.text
+      if text != '' && (not text.nil?)
+        refresh_line :user, text
+      else
+        refresh_line
+      end
+      @search_input.text = ''
+    end
+
+    @home_button.signal_connect 'clicked' do
+      refresh_line
+    end
 
     @main_box.show_all
   end
 
   def load_home_timeline
+    @view_now = 'home'
     timeline = @v.home_timeline 30, @page
     display timeline
     #加载按钮
@@ -190,6 +247,7 @@ class GVbo
   end
 
   def load_user_timeline(user)
+    @view_now = 'user'
     if user.is_a? Numeric
       timeline = @v.user_timeline user, nil, 30, @page
     else
@@ -200,14 +258,14 @@ class GVbo
     @load_new_button = Gtk::Button.new '继续浏览'
     @vbox.pack_start @load_new_button, false
     @load_new_button.show
-    load_new_button.signal_connect 'clicked' do |w, e|
+    @load_new_button.signal_connect 'clicked' do |w, e|
       @vbox.remove @load_new_button
       @page += 1
       load_user_timeline user
     end
 
     @refresh_button.signal_connect 'clicked' do
-      refresh_line :user
+      refresh_line :user, user
     end
 
   end
@@ -226,7 +284,7 @@ class GVbo
       weibo_detail_url = 'http://api.t.sina.com.cn/' + t['uid'] + '/statuses/' + t['id']
       
       line = ''
-      line += '<span weight="bold" foreground="white" background="#1982d1" font_desc="13">'
+      line += '<span weight="bold" foreground="DeepSkyBlue4" font_desc="13">'
       line += t['name'] 
       if t['remark'] != '' &&  (not t['remark'].nil?)
         line += '('+t['remark']+')'
@@ -242,10 +300,10 @@ class GVbo
         line += '<span foreground="#333333" font_desc="12">' + CGI::escapeHTML(t['r']['text']) + '</span>'
       end
 
-      more_table = Gtk::Table.new 1, 6
+      more_table = Gtk::Table.new 1, 8
       des_box = Gtk::HBox.new
       
-      more_label = Gtk::LinkButton.new weibo_detail_url, '进入详情'
+      more_label = Gtk::LinkButton.new weibo_detail_url, '详情'
 
       time_label = Gtk::Label.new
       time_label.markup = '<span foreground="#333333">'+t['time']+'</span>'
@@ -254,12 +312,82 @@ class GVbo
       comment_button = Gtk::Button.new '评论'
       retweet_button = Gtk::Button.new '转发'
       reit_button = Gtk::Button.new '直接转发'
-    
+
+      #user home button
+      if @view_now.nil? or @view_now != 'user'
+        user_home_button = Gtk::Button.new t['name'] #'Timeline'
+        user_home_button.signal_connect 'clicked' do
+          refresh_line :user, t['uid'].to_i
+        end
+        more_table.attach user_home_button, 7, 8, 0, 1
+      end
+      
+      #del tweet button
+      if @v.uid.to_s == t['uid'].to_s
+          del_button = Gtk::Button.new
+          del_label = Gtk::Label.new '删除'
+          del_button.add_child Gtk::Builder.new, del_label
+          del_button.modify_bg Gtk::STATE_NORMAL, Gdk::Color.parse('red')
+          del_label.modify_fg Gtk::STATE_NORMAL, Gdk::Color.parse('white')
+          del_label.modify_fg Gtk::STATE_PRELIGHT, Gdk::Color.parse('red')
+          
+          del_button.signal_connect 'clicked' do
+            @v.statuses_destroy t['id']
+            refresh_line
+          end
+
+        more_table.attach del_button, 5, 6, 0, 1
+      end
+      
+      #del_button.label.markup='删除'
+
+      comment_button.signal_connect 'clicked' do |w|
+        if w.label == '评论'
+          @weibo_send_status = 'comment'
+          @weibo_send_id = t['id']
+          @weibo_send_button_label.markup = '<b>评论</b>'
+          @weibo_send_button.modify_bg Gtk::STATE_NORMAL, Gdk::Color.parse('green')
+          w.label = '取消评论'
+        elsif w.label == '取消评论'
+          @weibo_send_status = nil
+          @weibo_send_id = nil
+          @weibo_send_button_label.markup = '<b>发布</b>'
+          @weibo_send_button.modify_bg Gtk::STATE_NORMAL, Gdk::Color.parse('DeepSkyBlue1')
+          w.label = '评论'
+          @weibo_input_field.buffer.text = ''
+        end
+      end
+
+      retweet_button.signal_connect 'clicked' do |w|
+        if w.label == '转发'
+          @weibo_send_status = 'retweet'
+          @weibo_send_id = t['id']
+          @weibo_send_button_label.markup = '<b>转发</b>'
+          @weibo_send_button.modify_bg Gtk::STATE_NORMAL, Gdk::Color.parse('yellow')
+          w.label = '取消转发'
+          @weibo_input_field.buffer.text = '//'+t['name']+':'+t['text']
+        elsif w.label == '取消转发'
+          @weibo_send_status = nil
+          @weibo_send_id = nil
+          @weibo_send_button_label.markup = '<b>发布</b>'
+          @weibo_send_button.modify_bg Gtk::STATE_NORMAL, Gdk::Color.parse('DeepSkyBlue1')
+          w.label = '转发'
+          @weibo_input_field.buffer.text = ''
+        end
+      end
+
+      reit_button.signal_connect 'clicked' do
+        @v.statuses_repost t['id']
+        refresh_line
+      end
+
+      
       more_table.attach time_label, 0, 2, 0, 1
       more_table.attach comment_button, 2, 3, 0, 1
       more_table.attach retweet_button, 3, 4, 0, 1
       more_table.attach reit_button, 4, 5, 0, 1
-      more_table.attach more_label, 5, 6, 0, 1
+      more_table.attach more_label, 6, 7, 0, 1
+      
 
       more_table.show_all
 
