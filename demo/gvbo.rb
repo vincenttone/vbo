@@ -81,40 +81,8 @@ class GVbo
     load_home_timeline
     #load_user_timeline :vincenttone
 
-    @weibo_send_button.signal_connect 'clicked' do |w|
-      if @weibo_send_status == 'retweet' && ( not @weibo_send_id.nil?)
-        @weibo_send_button_label.markup = '<b>发送中...</b>'
-        input_text = @weibo_input_field.buffer.text
-        if @v.statuses_repost @weibo_send_id, input_text
-          @weibo_send_button_label.markup = '<b>发布</b>'
-          @weibo_send_button.modify_bg Gtk::STATE_NORMAL, Gdk::Color.parse('DeepSkyBlue1')
-          refresh_line
-          @weibo_input_field.buffer.text = ''
-          @weibo_send_status = nil
-          @weibo_send_id = nil
-        end
-      elsif @weibo_send_status == 'comment' && ( not @weibo_send_id.nil?)
-        @weibo_send_button_label.markup = '<b>发送中...</b>'
-        input_text = @weibo_input_field.buffer.text
-        if @v.comments_create @weibo_send_id, input_text
-          @weibo_send_button_label.markup = '<b>发布</b>'
-          @weibo_send_button.modify_bg Gtk::STATE_NORMAL, Gdk::Color.parse('DeepSkyBlue1')
-          refresh_line
-          @weibo_input_field.buffer.text = ''
-          @weibo_send_status = nil
-          @weibo_send_id = nil
-        end
-      else
-        @weibo_send_button_label.markup = '<b>发送中...</b>'
-        input_text = @weibo_input_field.buffer.text
-        if @v.statuses_update input_text
-          @weibo_send_button_label.markup = '<b>发布</b>'
-          refresh_line
-          @weibo_input_field.buffer.text = ''
-          @weibo_send_status = nil
-          @weibo_send_id = nil
-        end
-      end
+    @weibo_send_button.signal_connect 'clicked' do
+      send_weibo
     end
   end
 
@@ -168,7 +136,13 @@ class GVbo
     @weibo_send_box = Gtk::VBox.new
     @weibo_send_box.pack_start @weibo_send_fixed, false
     @weibo_send_box.set_size_request 50, 50
-    
+
+    accel = Gtk::AccelGroup.new
+    key, mods = Gtk::Accelerator.parse '<Control>Return'
+    accel.connect key, mods, Gtk::ACCEL_VISIBLE do 
+      send_weibo
+    end
+    @window.add_accel_group accel
 
     @send_box.pack_start @weibo_input_box, false
     @send_box.pack_start @weibo_send_box, false
@@ -228,6 +202,42 @@ class GVbo
     end
 
     @main_box.show_all
+  end
+
+  def send_weibo
+    if @weibo_send_status == 'retweet' && ( not @weibo_send_id.nil?)
+      @weibo_send_button_label.markup = '<b>发送中...</b>'
+      input_text = @weibo_input_field.buffer.text
+      if @v.statuses_repost @weibo_send_id, input_text
+        @weibo_send_button_label.markup = '<b>发布</b>'
+        @weibo_send_button.modify_bg Gtk::STATE_NORMAL, Gdk::Color.parse('DeepSkyBlue1')
+        refresh_line
+        @weibo_input_field.buffer.text = ''
+        @weibo_send_status = nil
+        @weibo_send_id = nil
+      end
+    elsif @weibo_send_status == 'comment' && ( not @weibo_send_id.nil?)
+      @weibo_send_button_label.markup = '<b>发送中...</b>'
+      input_text = @weibo_input_field.buffer.text
+      if @v.comments_create @weibo_send_id, input_text
+        @weibo_send_button_label.markup = '<b>发布</b>'
+        @weibo_send_button.modify_bg Gtk::STATE_NORMAL, Gdk::Color.parse('DeepSkyBlue1')
+        refresh_line
+        @weibo_input_field.buffer.text = ''
+        @weibo_send_status = nil
+        @weibo_send_id = nil
+      end
+    else
+      @weibo_send_button_label.markup = '<b>发送中...</b>'
+      input_text = @weibo_input_field.buffer.text
+      if @v.statuses_update input_text
+        @weibo_send_button_label.markup = '<b>发布</b>'
+        refresh_line
+        @weibo_input_field.buffer.text = ''
+        @weibo_send_status = nil
+        @weibo_send_id = nil
+      end
+    end
   end
 
   def load_home_timeline
