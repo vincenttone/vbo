@@ -8,7 +8,7 @@ require File.dirname(__FILE__) + '/lib.rb'
 
 class GVbo
   def initialize
-    @v = VboTest.new './token.yml'
+    @v = VboTest.new File.dirname(__FILE__) +'/token.yml'
     @page = 1
     @view_now = 'home'
 
@@ -17,6 +17,8 @@ class GVbo
     @window.set_title "某个弱爆了的客户端"
     @window.set_size_request 500, 620
     @window.resizable=false
+    icon = Gdk::Pixbuf.new File.dirname(__FILE__) +"/icon.jpg"
+    @window.icon = icon
 
     @window.signal_connect 'delete_event' do
       Gtk::main_quit
