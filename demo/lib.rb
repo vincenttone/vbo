@@ -9,7 +9,7 @@ class VboTest
   def initialize(save_file='/tmp/vbo-test.yml')
     @save_file = save_file
     @vbo = Vbo::Weibo.new
-    @vbo.set_app_config '1211688234', 'de8316eba41cefcc86b768417c96de3e', 'http://tools.lunae.cc/vbo/callback.php'
+    @vbo.set_app_config :app_key, :app_scret, :callback_url
   end
 
   def set_access_token

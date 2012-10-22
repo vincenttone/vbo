@@ -14,5 +14,5 @@
 
 ## 关于DEMO
 test.rb是使用vbo写的一个简单命令查看微博的测试文件。
-
 gvbo.rb为gtk调用，头次写，见谅…
+> 请将demo/lib.rb中的key和scret等信息修改成自己的
