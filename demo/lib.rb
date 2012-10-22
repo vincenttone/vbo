@@ -18,7 +18,7 @@ class VboTest
       time_now = Time.now.to_i
       #如果过期了返回false
       if access_token['expires_when'].to_i < time_now
-        false
+        return false
       end
       @uid = access_token['uid']
       @vbo.set_access_token access_token
